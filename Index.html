@@ -139,7 +139,6 @@
                                 this.errorMsg = results.errors[0].message;
                                 return;
                             }
-                            // Add a unique id to each row
                             this.bouts = results.data.map((row, index) => ({
                                 id: index + 1,
                                 ...row
