@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Live Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- PapaParse CDN for robust CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased" x-data="tourneyApp()">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-xl font-bold tracking-wide text-amber-500">Tournament Live Portal</h1>
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
+                <button @click="activeTab = 'search'" :class="activeTab === 'search' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">Search</button>
+                <button @click="activeTab = 'schedule'" :class="activeTab === 'schedule' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">Schedule</button>
+                <button @click="activeTab = 'results'" :class="activeTab === 'results' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">Results</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Loading State Banner -->
+    <div x-show="loading" class="text-center py-20 text-slate-400">
+        <p class="text-lg">Loading live tournament data from Google Sheet...</p>
+    </div>
+
+    <!-- Error State Banner -->
+    <div x-show="errorMsg" class="max-w-xl mx-auto mt-10 bg-red-950 border border-red-800 text-red-300 p-4 rounded-xl text-center" x-cloak>
+        <p class="font-bold">Failed to load sheet data</p>
+        <p class="text-sm mt-1" x-text="errorMsg"></p>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6" x-cloak x-show="!loading && !errorMsg">
+
+        <!-- SEARCH TAB -->
+        <section x-show="activeTab === 'search'" class="space-y-6">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
+                <input type="text" x-model="searchQuery" placeholder="Search by fighter name, club, weight, or bout number..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-100 placeholder-slate-400 focus:outline-none focus:border-amber-500 transition">
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <template x-for="bout in filteredBouts" :key="bout.id">
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-3">
+                        <div class="flex justify-between items-center text-xs font-medium text-slate-400 border-b border-slate-700 pb-2">
+                            <span class="text-amber-400 font-bold" x-text="'Bout #' + bout.Bout"></span>
+                            <span x-text="(bout['Age Category'] || '') + ' | ' + (bout.Weight || '')"></span>
+                        </div>
+                        <div class="space-y-1 my-2">
+                            <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded">
+                                <span class="font-medium text-slate-200" x-text="bout['Red Corner Name']"></span>
+                                <span class="text-xs text-slate-400" x-text="bout['Red Corner Club']"></span>
+                            </div>
+                            <div class="text-center text-xs font-bold text-slate-500">VS</div>
+                            <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded">
+                                <span class="font-medium text-slate-200" x-text="bout['Blue Corner Name']"></span>
+                                <span class="text-xs text-slate-400" x-text="bout['Blue Corner Club']"></span>
+                            </div>
+                        </div>
+                        <div class="text-xs pt-2 border-t border-slate-700 flex justify-between items-center text-slate-400">
+                            <span x-text="'Ring: ' + bout.Ring"></span>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold" :class="bout.Status && bout.Status.toLowerCase() === 'completed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'" x-text="bout.Status"></span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+        <!-- SCHEDULE TAB -->
+        <section x-show="activeTab === 'schedule'" class="space-y-4" x-cloak>
+            <h2 class="text-xl font-bold text-slate-200">Tournament Schedule</h2>
+            <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                <div class="divide-y divide-slate-700">
+                    <template x-for="bout in scheduledBouts" :key="bout.id">
+                        <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/50 transition">
+                            <div>
+                                <span class="text-amber-400 font-bold text-sm" x-text="'Bout #' + bout.Bout"></span>
+                                <span class="text-slate-300 text-sm ml-2" x-text="(bout['Red Corner Name'] || 'TBD') + ' vs ' + (bout['Blue Corner Name'] || 'TBD')"></span>
+                            </div>
+                            <div class="text-xs text-slate-400 flex items-center gap-3">
+                                <span x-text="bout.Weight"></span>
+                                <span class="bg-slate-900 px-2 py-1 rounded border border-slate-700" x-text="bout.Ring"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </section>
+
+        <!-- RESULTS TAB -->
+        <section x-show="activeTab === 'results'" class="space-y-4" x-cloak>
+            <h2 class="text-xl font-bold text-slate-200">Completed Bout Results</h2>
+            <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                <div class="divide-y divide-slate-700">
+                    <template x-for="bout in completedBouts" :key="bout.id">
+                        <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/50 transition">
+                            <div>
+                                <span class="text-amber-400 font-bold text-sm" x-text="'Bout #' + bout.Bout"></span>
+                                <span class="text-slate-200 text-sm font-semibold ml-2" x-text="bout['Red Corner Name'] + ' vs ' + bout['Blue Corner Name']"></span>
+                            </div>
+                            <div class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-medium" x-text="'Red: ' + (bout['Red Result'] || '-') + ' | Blue: ' + (bout['Blue Result'] || '-')"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Script -->
+    <script>
+        function tourneyApp() {
+            return {
+                activeTab: 'search',
+                searchQuery: '',
+                bouts: [],
+                loading: true,
+                errorMsg: '',
+                init() {
+                    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxPkUm1w5r8Qd2mTFlnUG1LQ8SCCyIEgiVOenC774XRQyzhGvTTYq1AE8VVmU_uR3x4C1S_mYcQ9j4/pub?output=csv';
+                    
+                    Papa.parse(sheetUrl, {
+                        download: true,
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            this.loading = false;
+                            if (results.errors.length > 0 && results.data.length === 0) {
+                                this.errorMsg = results.errors[0].message;
+                                return;
+                            }
+                            // Add a unique id to each row
+                            this.bouts = results.data.map((row, index) => ({
+                                id: index + 1,
+                                ...row
+                            }));
+                        },
+                        error: (err) => {
+                            this.loading = false;
+                            this.errorMsg = err.message || 'Network error or CORS restriction prevented loading the sheet.';
+                        }
+                    });
+                },
+                get filteredBouts() {
+                    if (!this.searchQuery) return this.bouts;
+                    const q = this.searchQuery.toLowerCase();
+                    return this.bouts.filter(b => 
+                        String(b.Bout || '').toLowerCase().includes(q) ||
+                        String(b['Red Corner Name'] || '').toLowerCase().includes(q) ||
+                        String(b['Blue Corner Name'] || '').toLowerCase().includes(q) ||
+                        String(b['Red Corner Club'] || '').toLowerCase().includes(q) ||
+                        String(b['Blue Corner Club'] || '').toLowerCase().includes(q) ||
+                        String(b.Weight || '').toLowerCase().includes(q) ||
+                        String(b['Age Category'] || '').toLowerCase().includes(q)
+                    );
+                },
+                get scheduledBouts() {
+                    return this.bouts.filter(b => b.Status && b.Status.toLowerCase().trim() === 'scheduled');
+                },
+                get completedBouts() {
+                    return this.bouts.filter(b => b.Status && b.Status.toLowerCase().trim() === 'completed');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
