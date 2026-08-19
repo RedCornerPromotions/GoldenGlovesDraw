@@ -75,7 +75,7 @@
                         </div>
                         <div class="text-xs pt-2 border-t border-slate-700 flex justify-between items-center text-slate-400">
                             <span x-text="'Ring: ' + (bout.Ring || 'TBD')"></span>
-                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold" :class="(bout.Status || '').toLowerCase().trim() === 'completed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'" x-text="bout.Status || 'Scheduled'"></span>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold" :class="(bout.Status || '').toLowerCase().includes('completed') ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'" x-text="bout.Status || 'Upcoming'"></span>
                         </div>
                     </div>
                 </template>
@@ -101,7 +101,7 @@
                     </template>
                 </div>
                 <div class="p-8 text-center text-slate-400" x-show="scheduledBouts.length === 0">
-                    <p>No scheduled bouts found. (Check that the 'Status' column in your sheet contains 'Scheduled').</p>
+                    <p>No scheduled bouts found.</p>
                 </div>
             </div>
         </section>
@@ -122,7 +122,7 @@
                     </template>
                 </div>
                 <div class="p-8 text-center text-slate-400" x-show="completedBouts.length === 0">
-                    <p>No completed bouts found. (Check that the 'Status' column in your sheet contains 'Completed').</p>
+                    <p>No completed bouts found yet.</p>
                 </div>
             </div>
         </section>
@@ -151,7 +151,6 @@
                                 this.errorMsg = results.errors[0].message;
                                 return;
                             }
-                            // Clean keys and trim string values
                             this.bouts = results.data.map((row, index) => {
                                 let cleanRow = { id: index + 1 };
                                 for (let key in row) {
@@ -161,7 +160,6 @@
                                 }
                                 return cleanRow;
                             });
-                            console.log("Loaded Bouts:", this.bouts.length);
                         },
                         error: (err) => {
                             this.loading = false;
@@ -183,16 +181,22 @@
                     );
                 },
                 get scheduledBouts() {
+                    // Treat any bout as scheduled unless its status explicitly marks it completed or has a winner result
                     return this.bouts.filter(b => {
                         const status = (b.Status || '').toLowerCase();
-                        // Treat empty status or 'scheduled' as part of schedule
-                        return status === '' || status.includes('scheduled');
+                        const redRes = (b['Red Result'] || '').toLowerCase();
+                        const blueRes = (b['Blue Result'] || '').toLowerCase();
+                        const isCompleted = status.includes('completed') || status.includes('result') || redRes !== '' || blueRes !== '';
+                        return !isCompleted;
                     });
                 },
                 get completedBouts() {
+                    // Treat as completed if status says completed OR if result columns have data
                     return this.bouts.filter(b => {
                         const status = (b.Status || '').toLowerCase();
-                        return status.includes('completed') || status.includes('result') || status.includes('won') || status.includes('lost');
+                        const redRes = (b['Red Result'] || '').toLowerCase();
+                        const blueRes = (b['Blue Result'] || '').toLowerCase();
+                        return status.includes('completed') || status.includes('result') || redRes !== '' || blueRes !== '';
                     });
                 }
             }
