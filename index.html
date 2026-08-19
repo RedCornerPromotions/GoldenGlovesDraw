@@ -22,9 +22,15 @@
             <h1 class="text-xl font-bold tracking-wide text-amber-500">Tournament Live Portal</h1>
             <!-- Navigation Tabs -->
             <nav class="flex space-x-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
-                <button @click="activeTab = 'search'" :class="activeTab === 'search' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">Search</button>
-                <button @click="activeTab = 'schedule'" :class="activeTab === 'schedule' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">Schedule</button>
-                <button @click="activeTab = 'results'" :class="activeTab === 'results' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">Results</button>
+                <button @click="activeTab = 'search'" :class="activeTab === 'search' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">
+                    Search (<span x-text="bouts.length"></span>)
+                </button>
+                <button @click="activeTab = 'schedule'" :class="activeTab === 'schedule' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">
+                    Schedule (<span x-text="scheduledBouts.length"></span>)
+                </button>
+                <button @click="activeTab = 'results'" :class="activeTab === 'results' ? 'bg-amber-500 text-slate-950 font-semibold' : 'text-slate-300 hover:text-white'" class="px-4 py-2 rounded-md text-sm transition">
+                    Results (<span x-text="completedBouts.length"></span>)
+                </button>
             </nav>
         </div>
     </header>
@@ -53,23 +59,23 @@
                 <template x-for="bout in filteredBouts" :key="bout.id">
                     <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-sm flex flex-col justify-between space-y-3">
                         <div class="flex justify-between items-center text-xs font-medium text-slate-400 border-b border-slate-700 pb-2">
-                            <span class="text-amber-400 font-bold" x-text="'Bout #' + bout.Bout"></span>
+                            <span class="text-amber-400 font-bold" x-text="'Bout #' + (bout.Bout || bout.id)"></span>
                             <span x-text="(bout['Age Category'] || '') + ' | ' + (bout.Weight || '')"></span>
                         </div>
                         <div class="space-y-1 my-2">
                             <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded">
-                                <span class="font-medium text-slate-200" x-text="bout['Red Corner Name']"></span>
-                                <span class="text-xs text-slate-400" x-text="bout['Red Corner Club']"></span>
+                                <span class="font-medium text-slate-200" x-text="bout['Red Corner Name'] || 'TBD'"></span>
+                                <span class="text-xs text-slate-400" x-text="bout['Red Corner Club'] || ''"></span>
                             </div>
                             <div class="text-center text-xs font-bold text-slate-500">VS</div>
                             <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded">
-                                <span class="font-medium text-slate-200" x-text="bout['Blue Corner Name']"></span>
-                                <span class="text-xs text-slate-400" x-text="bout['Blue Corner Club']"></span>
+                                <span class="font-medium text-slate-200" x-text="bout['Blue Corner Name'] || 'TBD'"></span>
+                                <span class="text-xs text-slate-400" x-text="bout['Blue Corner Club'] || ''"></span>
                             </div>
                         </div>
                         <div class="text-xs pt-2 border-t border-slate-700 flex justify-between items-center text-slate-400">
-                            <span x-text="'Ring: ' + bout.Ring"></span>
-                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold" :class="bout.Status && bout.Status.toLowerCase() === 'completed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'" x-text="bout.Status"></span>
+                            <span x-text="'Ring: ' + (bout.Ring || 'TBD')"></span>
+                            <span class="px-2 py-0.5 rounded text-[11px] font-semibold" :class="(bout.Status || '').toLowerCase().trim() === 'completed' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-amber-950 text-amber-400 border border-amber-800'" x-text="bout.Status || 'Scheduled'"></span>
                         </div>
                     </div>
                 </template>
@@ -78,13 +84,13 @@
 
         <!-- SCHEDULE TAB -->
         <section x-show="activeTab === 'schedule'" class="space-y-4" x-cloak>
-            <h2 class="text-xl font-bold text-slate-200">Tournament Schedule</h2>
+            <h2 class="text-xl font-bold text-slate-200">Tournament Schedule (<span x-text="scheduledBouts.length"></span>)</h2>
             <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-                <div class="divide-y divide-slate-700">
+                <div class="divide-y divide-slate-700" x-show="scheduledBouts.length > 0">
                     <template x-for="bout in scheduledBouts" :key="bout.id">
                         <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/50 transition">
                             <div>
-                                <span class="text-amber-400 font-bold text-sm" x-text="'Bout #' + bout.Bout"></span>
+                                <span class="text-amber-400 font-bold text-sm" x-text="'Bout #' + (bout.Bout || bout.id)"></span>
                                 <span class="text-slate-300 text-sm ml-2" x-text="(bout['Red Corner Name'] || 'TBD') + ' vs ' + (bout['Blue Corner Name'] || 'TBD')"></span>
                             </div>
                             <div class="text-xs text-slate-400 flex items-center gap-3">
@@ -94,23 +100,29 @@
                         </div>
                     </template>
                 </div>
+                <div class="p-8 text-center text-slate-400" x-show="scheduledBouts.length === 0">
+                    <p>No scheduled bouts found. (Check that the 'Status' column in your sheet contains 'Scheduled').</p>
+                </div>
             </div>
         </section>
 
         <!-- RESULTS TAB -->
         <section x-show="activeTab === 'results'" class="space-y-4" x-cloak>
-            <h2 class="text-xl font-bold text-slate-200">Completed Bout Results</h2>
+            <h2 class="text-xl font-bold text-slate-200">Completed Bout Results (<span x-text="completedBouts.length"></span>)</h2>
             <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-                <div class="divide-y divide-slate-700">
+                <div class="divide-y divide-slate-700" x-show="completedBouts.length > 0">
                     <template x-for="bout in completedBouts" :key="bout.id">
                         <div class="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-700/50 transition">
                             <div>
-                                <span class="text-amber-400 font-bold text-sm" x-text="'Bout #' + bout.Bout"></span>
-                                <span class="text-slate-200 text-sm font-semibold ml-2" x-text="bout['Red Corner Name'] + ' vs ' + bout['Blue Corner Name']"></span>
+                                <span class="text-amber-400 font-bold text-sm" x-text="'Bout #' + (bout.Bout || bout.id)"></span>
+                                <span class="text-slate-200 text-sm font-semibold ml-2" x-text="(bout['Red Corner Name'] || 'TBD') + ' vs ' + (bout['Blue Corner Name'] || 'TBD')"></span>
                             </div>
                             <div class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-3 py-1 rounded-full font-medium" x-text="'Red: ' + (bout['Red Result'] || '-') + ' | Blue: ' + (bout['Blue Result'] || '-')"></div>
                         </div>
                     </template>
+                </div>
+                <div class="p-8 text-center text-slate-400" x-show="completedBouts.length === 0">
+                    <p>No completed bouts found. (Check that the 'Status' column in your sheet contains 'Completed').</p>
                 </div>
             </div>
         </section>
@@ -139,10 +151,17 @@
                                 this.errorMsg = results.errors[0].message;
                                 return;
                             }
-                            this.bouts = results.data.map((row, index) => ({
-                                id: index + 1,
-                                ...row
-                            }));
+                            // Clean keys and trim string values
+                            this.bouts = results.data.map((row, index) => {
+                                let cleanRow = { id: index + 1 };
+                                for (let key in row) {
+                                    let cleanKey = key.trim();
+                                    let val = row[key];
+                                    cleanRow[cleanKey] = typeof val === 'string' ? val.trim() : val;
+                                }
+                                return cleanRow;
+                            });
+                            console.log("Loaded Bouts:", this.bouts.length);
                         },
                         error: (err) => {
                             this.loading = false;
@@ -164,10 +183,17 @@
                     );
                 },
                 get scheduledBouts() {
-                    return this.bouts.filter(b => b.Status && b.Status.toLowerCase().trim() === 'scheduled');
+                    return this.bouts.filter(b => {
+                        const status = (b.Status || '').toLowerCase();
+                        // Treat empty status or 'scheduled' as part of schedule
+                        return status === '' || status.includes('scheduled');
+                    });
                 },
                 get completedBouts() {
-                    return this.bouts.filter(b => b.Status && b.Status.toLowerCase().trim() === 'completed');
+                    return this.bouts.filter(b => {
+                        const status = (b.Status || '').toLowerCase();
+                        return status.includes('completed') || status.includes('result') || status.includes('won') || status.includes('lost');
+                    });
                 }
             }
         }
